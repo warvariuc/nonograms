@@ -1,0 +1,7 @@
+# hidden files
+.*
+
+# compiled python scripts
+*.pyc
+*.pyo
+__pycache__

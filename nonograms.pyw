@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+__author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
 
 import sys
 
 if sys.hexversion < 0x03010000:
-    print("At least Python 3.1 needed. Exiting.");
+    print("At least Python 3.1 needed. Exiting.")
     sys.exit(1) 
 
 
@@ -12,24 +13,29 @@ from PyQt4 import QtCore, QtGui
 
 
 app = QtGui.QApplication(sys.argv)
-app.setOrganizationName('warvar')
+app.setOrganizationName('warvariuc')
 app.setApplicationName('nonograms')
 
 
-appDir = os.path.dirname(os.path.abspath(sys.argv[0]))
+appDir = os.path.dirname(os.path.abspath(__file__))
 QtGui.qApp.appDir = appDir
 
 
 mainWindow = __import__('main_window').MainWindow()
 mainWindow.show()
 
-def exception_hook(exc_type, exc_value, exc_traceback): # Global function to catch unhandled exceptions (mostly in user modules)
+
+def exception_hook(exc_type, exc_value, exc_traceback):
+    """Global function to catch unhandled exceptions.
+    """
     import traceback
-    info = ''.join (traceback.format_exception(exc_type, exc_value, exc_traceback))
+    info = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     print(info)
     QtGui.QMessageBox.warning(mainWindow, 'Exception', str(info))
-    
+
+
 sys.excepthook = exception_hook
 
-res = app.exec() # start the event loop
+
+res = app.exec()  # start the event loop
 sys.exit(res)
