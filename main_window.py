@@ -19,12 +19,12 @@ class MainWindow(QtGui.QMainWindow):
 
         self.boardView = board.BoardView()
         self.setCentralWidget(self.boardView)
-        self.statusBar()
+        self.statusBar()  # create status bar
 
         # Create menu
         self.fileMenu = self.menuBar().addMenu('Файл')
         self.actionFileOpen = self.createAction(
-            'Открыть…', self.handleFileOpen, QtGui.QKeySequence.Open,
+            'Открыть...', self.handleFileOpen, QtGui.QKeySequence.Open,
             'folder-open-document-text.png')
         self.addActions(self.fileMenu, (self.actionFileOpen, ))
         self.recentFilesMenu = self.fileMenu.addMenu(
@@ -42,8 +42,10 @@ class MainWindow(QtGui.QMainWindow):
 
         self.helpMenu = self.menuBar().addMenu('Помощь')
         self.addActions(self.helpMenu, [
-            self.createAction('О программе', self.helpAbout,
+            self.createAction('О программе', self.showHelpAbout,
                               icon='question-button.png'),
+            self.createAction('Как играть', self.showHelpUsage,
+                              icon='nonograms-logo.png'),
         ])
 
         self.setWindowTitle('Японские кроссворды')
@@ -131,9 +133,13 @@ class MainWindow(QtGui.QMainWindow):
     def fileSave(self):
         self.boardView.model().board.save()
 
-    def helpAbout(self):
-        import help_about
-        help_about.showAboutInfo(self)
+    def showHelpAbout(self):
+        import help
+        help.showAboutInfo(self)
+
+    def showHelpUsage(self):
+        import help
+        help.showUsageInfo(self)
 
     def createAction(self, text, slot=None, shortcut=None, icon=None, tip=None,
                      checkable=False, signal='triggered'):

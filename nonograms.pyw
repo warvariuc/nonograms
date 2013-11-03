@@ -21,8 +21,11 @@ appDir = os.path.dirname(os.path.abspath(__file__))
 QtGui.qApp.appDir = appDir
 
 
-mainWindow = __import__('main_window').MainWindow()
+import main_window
+mainWindow = main_window.MainWindow()
 mainWindow.show()
+
+QtGui.qApp.mainWindow = mainWindow
 
 
 def exception_hook(exc_type, exc_value, exc_traceback):

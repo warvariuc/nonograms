@@ -56,36 +56,36 @@ class BoardView(QtGui.QTableView):
         self.numbersPen = QtGui.QPen(QtCore.Qt.black)
         self.numbersBorderPen = QtGui.QPen(QtGui.QColor(136, 136, 136))
 
-    def eventFilter(self, target, event):  # target - viewport
+    def switchCell(self, mouseEvent, newState=None):
+        row = self.rowAt(mouseEvent.y())
+        column = self.columnAt(mouseEvent.x())
 
-        def switchCell(mouseEvent, newState=None):
-            row = self.rowAt(mouseEvent.y())
-            column = self.columnAt(mouseEvent.x())
+        model = self.model()
+        boardRow = row - model.board.maxColumnBlocks
+        boardColumn = column - model.board.maxRowBlocks
 
-            model = self.model()
-            boardRow = row - model.board.maxColumnBlocks
-            boardColumn = column - model.board.maxRowBlocks
+        if boardRow < 0 and boardColumn < 0:
+            return
 
-            if boardRow < 0 and boardColumn < 0:
-                return
-
-            if boardRow >= 0 and boardColumn >= 0:
-                if newState is None:
-                    if self.currentAction is None:
-                        return
-                    newState = self.currentAction
+        if boardRow >= 0 and boardColumn >= 0:
+            if newState is None:
+                if self.currentAction is None:
+                    return
+                newState = self.currentAction
+            else:
+                if newState == model.board.data[boardRow][boardColumn]:
+                    newState = CELL
                 else:
-                    if newState == model.board.data[boardRow][boardColumn]:
-                        newState = CELL
-                    else:
-                        newState = newState
-                    self.currentAction = newState
-                model.board.setData(boardRow, boardColumn, newState)
+                    newState = newState
+                self.currentAction = newState
+            model.board.setData(boardRow, boardColumn, newState)
+
+    def eventFilter(self, target, event):  # target - viewport
 
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if event.button() == QtCore.Qt.LeftButton:
                 # LeftClick -> box; Shift + LeftClick -> space
-                switchCell(event, SPACE if event.modifiers() == QtCore.Qt.ShiftModifier else BOX)
+                self.switchCell(event, SPACE if event.modifiers() == QtCore.Qt.ShiftModifier else BOX)
                 return True
             elif event.button() == QtCore.Qt.RightButton:
                 model = self.model()
@@ -93,21 +93,24 @@ class BoardView(QtGui.QTableView):
                 boardColumn = self.columnAt(
                     event.x()) - model.board.maxRowBlocks
                 if boardRow >= 0 and boardColumn >= 0:
-                    switchCell(event, SPACE)  # RightClick -> space
+                    self.switchCell(event, SPACE)  # RightClick -> space
                 elif boardRow >= 0 or boardColumn >= 0:
                     if boardColumn < 0:
                         model.board.solveRow(boardRow)
                     elif boardRow < 0:
                         model.board.solveColumn(boardColumn)
+                else:
+                    QtGui.qApp.mainWindow.handlePuzzleSolve()
                 return True
         elif event.type() == QtCore.QEvent.MouseButtonRelease:
             if event.buttons() == QtCore.Qt.NoButton:
                 self.currentAction = None
             return True
         elif event.type() == QtCore.QEvent.MouseMove:
-            switchCell(event)
+            self.switchCell(event)
             return True
         elif event.type() == QtCore.QEvent.Wheel:
+            # board zoom
             if event.modifiers() == QtCore.Qt.ControlModifier:
                 cellSize = self.cellSize + int(event.delta() / 120)
                 if cellSize > 10:  # минимальный размер ячейки

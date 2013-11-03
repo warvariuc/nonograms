@@ -27,3 +27,15 @@ Icons</a>.</p>
 Python {}, Qt {}, PyQt {}, OS {}</p>
 """.format(platform.python_version(), QtCore.QT_VERSION_STR,
            QtCore.PYQT_VERSION_STR, platform.system()))
+
+
+def showUsageInfo(mainWindow):
+    QtGui.QMessageBox.about(mainWindow, 'Как играть', """
+<b>Управление</b>
+<ul>
+    <li><i>Левый щелчок мыши на клетке поля</i> - закрасить/сбросить клетку.</li>
+    <li><i>Правый щелчок мыши на клетке поля</i> - забелить/сбросить клетку.</li>
+    <li><i>Shift + левый щелчок мыши на клетке поля</i> - то же что и <i>Правый щелчок мыши на клетке поля</i>.</li>
+    <li><i>Левый щелчок мыши на заголовке строки/колонки</i> - попытаться решить строку/колонку.</li>
+</ul>
+""")
