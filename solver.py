@@ -2,7 +2,7 @@ __author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
 
 import copy
 
-from board import BOX, SPACE, CELL
+from board import FILLED, BLANK, PLACEHOLDER
 
 
 class Block():
@@ -57,12 +57,12 @@ class Solver():
             for i, count in enumerate(self.accumulator):
                 state = self.line[i]
                 if not self.combinations:
-                    state = CELL
+                    state = PLACEHOLDER
                 else:
                     if count == 0:
-                        state = SPACE
+                        state = BLANK
                     if count == self.combinations:
-                        state = BOX
+                        state = FILLED
                 self.line[i] = state
 
         return ''.join(self.line)
@@ -93,7 +93,7 @@ class Solver():
                 # недействительная позиция - блок вышел за границы строки
                 return False
 
-            if blockBegin > 0 and self.line[blockBegin - 1] == BOX:
+            if blockBegin > 0 and self.line[blockBegin - 1] == FILLED:
                 # нельзя оставлять закрашенные клетки за первым толкаемым блоком
                 if blockNo == self.pushedBlockNo:
                     return False
@@ -112,14 +112,14 @@ class Solver():
                         # последний фиктивный блок, к-й нельзя сдвинуть
                         nextBlockBegin = len(self.line) + 2
                 # невалидная позиция  - клетка перед началом блока закрашена
-            if blockBegin > 0 and self.line[blockBegin - 1] == BOX:
+            if blockBegin > 0 and self.line[blockBegin - 1] == FILLED:
                 continue
 
-            if SPACE in self.line[blockBegin:blockEnd]:
+            if BLANK in self.line[blockBegin:blockEnd]:
                 # недействительная позиция - блок попадает на уже пустую клетку
                 continue
 
-            if BOX in self.line[blockEnd:nextBlockBegin]:
+            if FILLED in self.line[blockEnd:nextBlockBegin]:
                 # недействительная позиция - между текущим и следующим блоками
                 # есть уже закрашенная клетка
                 continue

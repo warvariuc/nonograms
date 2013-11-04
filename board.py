@@ -1,11 +1,140 @@
 __author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
 
 import os
+import itertools
 
 from PyQt4 import QtCore, QtGui
 
 
-CELL, BOX, SPACE = ' #.'
+PLACEHOLDER, FILLED, BLANK = ' @.'
+
+
+class Board():
+    """
+    """
+    def __init__(self, model):
+        self.model = model
+        self.rowNumbers = []
+        self.colNumbers = []
+        self.data = []
+        self.solver = solver.Solver()
+        self.filePath = None
+        self.clear()
+
+    @property
+    def rowCount(self):
+        return len(self.rowNumbers)
+
+    @property
+    def colCount(self):
+        return len(self.colNumbers)
+
+    @property
+    def maxRowNumCount(self):
+        return len(self.rowNumbers[0]) if self.rowNumbers else 0
+
+    @property
+    def maxColNumCount(self):
+        return len(self.colNumbers[0]) if self.colNumbers else 0
+
+    def clear(self):
+        self.model.layoutAboutToBeChanged.emit()
+        self.data = [[PLACEHOLDER] * self.colCount for _ in range(self.rowCount)]
+        self.model.layoutChanged.emit()
+
+    def setData(self, row, column, state):
+        self.data[row][column] = state
+        index = self.model.index(
+            row + self.maxColNumCount, column + self.maxRowNumCount)
+        self.model.dataChanged.emit(index, index)
+
+    def getNumbers(self, line):
+        numbers = []
+        for state, block in itertools.groupby(line):
+            if state == FILLED:
+                block_length = sum(1 for _ in block)
+                numbers.append(block_length)
+            elif state == BLANK:
+                pass
+            else:
+                raise TypeError('Invalid cell value: %r' % state)
+        return numbers
+
+    def load(self, filePath):
+        """
+        """
+        if not os.path.isfile(filePath):
+            return
+        with open(filePath, 'r', encoding='utf8') as file:
+            board = file.read().splitlines()
+
+        rowNumbers = [self.getNumbers(row) for row in board]
+
+        colNumbers = [self.getNumbers([row[colNo] for row in board])
+                      for colNo in range(len(board[0]))]
+
+        maxRowNumCount = max(map(len, rowNumbers))
+        self.rowNumbers = [
+            [0] * (maxRowNumCount - len(_rowNumbers)) + _rowNumbers
+            for _rowNumbers in rowNumbers
+        ]
+        maxColNumCount = max(map(len, colNumbers))
+        self.colNumbers = [
+            [0] * (maxColNumCount - len(_colNumbers)) + _colNumbers
+            for _colNumbers in colNumbers
+        ]
+        self.clear()
+
+        self.filePath = filePath
+
+    def load1(self, filePath):
+        # загрузить файл с цифрами как здесь:
+        # http://www.bestcrosswords.ru/jp/20003009-form.html
+        if not os.path.isfile(filePath):
+            return
+        with open(filePath, 'r', encoding='utf8') as file:
+            sectionNo = 0
+            verticalNumbersLines = []
+            horizontalNumbersLines = []
+            for line in file:
+                line = line.strip()
+                if line:
+                    if sectionNo == 0:
+                        verticalNumbersLines.append(map(int, line.split()))
+                    elif sectionNo == 1:
+                        horizontalNumbersLines.append(map(int, line.split()))
+                else:
+                    sectionNo += 1
+
+        self.rowNumbers = list(zip(*horizontalNumbersLines))
+        self.colNumbers = list(zip(*verticalNumbersLines))
+        self.clear()
+
+        self.filePath = filePath
+
+    def solveRow(self, rowNo):
+        numbers = filter(None, self.rowNumbers[rowNo])
+        line = self.data[rowNo]
+        line = self.solver.scanLine(line, numbers)
+        for colNo, state in enumerate(line):
+            self.setData(rowNo, colNo, state)
+
+    def solveColumn(self, colNo):
+        numbers = filter(None, self.colNumbers[colNo])
+        line = [row[colNo] for row in self.data]
+        line = self.solver.scanLine(line, numbers)
+        for rowNo, state in enumerate(line):
+            self.setData(rowNo, colNo, state)
+
+    def save(self):
+        for row in self.data:
+            for state in row:
+                if state not in (FILLED, BLANK):
+                    raise Exception('The puzzle is not yet solved!')
+        filePath = os.path.splitext(self.filePath)[0] + '.nonogram'
+        with open(filePath, 'w', encoding='utf8') as file:
+            for line in self.data:
+                file.write(''.join(line) + '\n')
 
 
 class BoardView(QtGui.QTableView):
@@ -74,7 +203,7 @@ class BoardView(QtGui.QTableView):
             state = self.currentAction
         else:
             if state == board.data[boardRow][boardColumn]:
-                state = CELL
+                state = PLACEHOLDER
             self.currentAction = state
         board.setData(boardRow, boardColumn, state)
 
@@ -83,8 +212,8 @@ class BoardView(QtGui.QTableView):
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if event.button() == QtCore.Qt.LeftButton:
                 # LeftClick -> box; Shift + LeftClick -> space
-                state = (SPACE if event.modifiers() == QtCore.Qt.ShiftModifier
-                         else BOX)
+                state = (BLANK if event.modifiers() == QtCore.Qt.ShiftModifier
+                         else FILLED)
                 self.switchCell(event, state)
                 return True
             elif event.button() == QtCore.Qt.RightButton:
@@ -92,7 +221,7 @@ class BoardView(QtGui.QTableView):
                 rowNo = self.rowAt(event.y()) - model.board.maxColNumCount
                 colNo = self.columnAt(event.x()) - model.board.maxRowNumCount
                 if rowNo >= 0 and colNo >= 0:
-                    self.switchCell(event, SPACE)  # RightClick -> space
+                    self.switchCell(event, BLANK)  # RightClick -> space
                 elif rowNo >= 0 or colNo >= 0:
                     if colNo < 0:
                         model.board.solveRow(rowNo)
@@ -149,11 +278,11 @@ class BoardViewItemDelegate(QtGui.QStyledItemDelegate):
         else:
             # это ячейка поля
             cellValue = board.data[boardRow][boardColumn]
-            if cellValue == CELL:
+            if cellValue == PLACEHOLDER:
                 self.drawCell(painter, option.rect)
-            elif cellValue == BOX:
+            elif cellValue == FILLED:
                 self.drawBox(painter, option.rect)
-            elif cellValue == SPACE:
+            elif cellValue == BLANK:
                 self.drawSpace(painter, option.rect)
             self.drawBorders(painter, option.rect, boardRow, boardColumn)
 
@@ -214,89 +343,6 @@ class BoardViewItemDelegate(QtGui.QStyledItemDelegate):
             painter.setPen(self.parent().numbersPen)
             rect = rect.adjusted(0, 0, -3, 0)
             painter.drawText(rect, align, str(number))
-
-
-class Board():
-    """
-    """
-    def __init__(self, model):
-        self.model = model
-        self.rowNumbers = []
-        self.colNumbers = []
-        self.data = []
-        self.solver = solver.Solver()
-        self.filePath = None
-        self.clear()
-
-    @property
-    def rowCount(self):
-        return len(self.rowNumbers)
-
-    @property
-    def colCount(self):
-        return len(self.colNumbers)
-
-    @property
-    def maxRowNumCount(self):
-        return len(self.rowNumbers[0]) if self.rowNumbers else 0
-
-    @property
-    def maxColNumCount(self):
-        return len(self.colNumbers[0]) if self.colNumbers else 0
-
-    def clear(self):
-        self.model.layoutAboutToBeChanged.emit()
-        self.data = [[CELL] * self.colCount for _ in range(self.rowCount)]
-        self.model.layoutChanged.emit()
-
-    def setData(self, row, column, state):
-        self.data[row][column] = state
-        index = self.model.index(
-            row + self.maxColNumCount, column + self.maxRowNumCount)
-        self.model.dataChanged.emit(index, index)
-
-    def load1(self, filePath):
-        # загрузить файл с цифрами как здесь:
-        # http://www.bestcrosswords.ru/jp/20003009-form.html
-        with open(filePath, 'r', encoding='utf8') as file:
-            sectionNo = 0
-            verticalNumbersLines = []
-            horizontalNumbersLines = []
-            for line in file:
-                line = line.strip()
-                if line:
-                    if sectionNo == 0:
-                        verticalNumbersLines.append(map(int, line.split()))
-                    elif sectionNo == 1:
-                        horizontalNumbersLines.append(map(int, line.split()))
-                else:
-                    sectionNo += 1
-
-            self.rowNumbers = list(zip(*horizontalNumbersLines))
-            self.colNumbers = list(zip(*verticalNumbersLines))
-            self.clear()
-
-            self.filePath = filePath
-
-    def solveRow(self, rowNo):
-        numbers = filter(None, self.rowNumbers[rowNo])
-        line = self.data[rowNo]
-        line = self.solver.scanLine(line, numbers)
-        for colNo, state in enumerate(line):
-            self.setData(rowNo, colNo, state)
-
-    def solveColumn(self, colNo):
-        numbers = filter(None, self.colNumbers[colNo])
-        line = [row[colNo] for row in self.data]
-        line = self.solver.scanLine(line, numbers)
-        for rowNo, state in enumerate(line):
-            self.setData(rowNo, colNo, state)
-
-    def save(self):
-        filePath = os.path.splitext(self.filePath)[0] + '.nonogram'
-        with open(filePath, 'w', encoding='utf8') as file:
-            for line in self.data:
-                file.write(''.join(line) + '\n')
 
 
 class BoardModel(QtCore.QAbstractTableModel):

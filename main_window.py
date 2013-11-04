@@ -112,7 +112,7 @@ class MainWindow(QtGui.QMainWindow):
     def handleFileOpen(self):
         filePath = QtGui.QFileDialog.getOpenFileName(
             self, 'Открыть файл', self.settings.lastUsedDirectory,
-            '1 (*.nonogram1);;2 (*.nonogram)')
+            '*.nonogram (*.nonogram);;*.nonogram1 (*.nonogram1)')
         if filePath:
             self.settings.lastUsedDirectory = os.path.dirname(filePath)
             self._openFile(filePath)
