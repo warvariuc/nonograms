@@ -12,6 +12,7 @@ import os
 from PyQt4 import QtCore, QtGui
 
 
+QtCore.pyqtRemoveInputHook()
 app = QtGui.QApplication(sys.argv)
 app.setOrganizationName('warvariuc')
 app.setApplicationName('nonograms')

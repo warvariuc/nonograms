@@ -5,17 +5,16 @@ import os
 from PyQt4 import QtCore, QtGui
 
 
-appDir = QtGui.qApp.appDir
-recent_doc_icon = QtGui.QIcon(
-    os.path.join(appDir, 'icons', 'blue-folder-open-document-text.png'))
+def get_icon(fileName):
+    return QtGui.QIcon(os.path.join(QtGui.qApp.appDir, 'icons', fileName))
+recent_doc_icon = get_icon('blue-folder-open-document-text.png')
 
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowIcon(QtGui.QIcon(
-            os.path.join(appDir, 'icons', 'nonograms-logo.png')))
+        self.setWindowIcon(get_icon('nonograms-logo.png'))
 
         self.boardView = board.BoardView()
         self.setCentralWidget(self.boardView)
@@ -28,8 +27,7 @@ class MainWindow(QtGui.QMainWindow):
             'folder-open-document-text.png')
         self.addActions(self.fileMenu, (self.actionFileOpen, ))
         self.recentFilesMenu = self.fileMenu.addMenu(
-            QtGui.QIcon(os.path.join(appDir, 'icons', 'folders-stack.png')),
-            'Недавние файлы')
+            get_icon('folders-stack.png'), 'Недавние файлы')
         self.recentFilesMenu.aboutToShow.connect(self.updateRecentFiles)
         self.actionFileSave = self.createAction(
             'Сохранить', self.fileSave, QtGui.QKeySequence.Save,
@@ -92,8 +90,7 @@ class MainWindow(QtGui.QMainWindow):
         menu.clear()
         for file in recentFiles:
             menu.addAction(
-                QtGui.QIcon(os.path.join(appDir, 'icons',
-                                         'blue-folder-open-document-text.png')),
+                get_icon('blue-folder-open-document-text.png'),
                 file, lambda file=file: self._openFile(file))
         if menu.isEmpty():
             noItemsAction = menu.addAction('Пусто')
@@ -104,10 +101,10 @@ class MainWindow(QtGui.QMainWindow):
 
     def handlePuzzleSolve(self):
         board = self.boardView.model().board
-        for rowNo in range(board.rows):
+        for rowNo in range(board.rowCount):
             self.statusBar().showMessage('Решается строка ' + str(rowNo))
             board.solveRow(rowNo)
-        for columnNo in range(board.columns):
+        for columnNo in range(board.colCount):
             self.statusBar().showMessage('Решается колонка ' + str(columnNo))
             board.solveColumn(columnNo)
         self.statusBar().clearMessage()
@@ -115,15 +112,18 @@ class MainWindow(QtGui.QMainWindow):
     def handleFileOpen(self):
         filePath = QtGui.QFileDialog.getOpenFileName(
             self, 'Открыть файл', self.settings.lastUsedDirectory,
-            '1 (*.nonogram1);;2 (*.nonogram2)')
+            '1 (*.nonogram1);;2 (*.nonogram)')
         if filePath:
             self.settings.lastUsedDirectory = os.path.dirname(filePath)
             self._openFile(filePath)
 
     def _openFile(self, filePath):
-        if not filePath.endswith('.nonogram1'):
+        if filePath.endswith('.nonogram1'):
+            self.boardView.model().board.load1(filePath)
+        elif filePath.endswith('.nonogram'):
+            self.boardView.model().board.load(filePath)
+        else:
             return
-        self.boardView.model().board.load1(filePath)
         puzzle_name = os.path.splitext(os.path.basename(filePath))[0]
         self.setWindowTitle('%s - Японские кроссворды' % puzzle_name)
         self.settings.lastPuzzlePath = filePath
@@ -141,12 +141,12 @@ class MainWindow(QtGui.QMainWindow):
         import help
         help.showUsageInfo(self)
 
-    def createAction(self, text, slot=None, shortcut=None, icon=None, tip=None,
+    def createAction(self, text, slot=None, shortcut=None, icon='', tip=None,
                      checkable=False, signal='triggered'):
         #Convenience function to create PyQt actions
         action = QtGui.QAction(text, self)
-        if icon is not None:
-            action.setIcon(QtGui.QIcon(os.path.join(appDir, 'icons', icon)))
+        if icon:
+            action.setIcon(get_icon(icon))
         if shortcut is not None:
             action.setShortcut(shortcut)
         if tip is not None:
