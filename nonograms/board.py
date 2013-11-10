@@ -6,7 +6,7 @@ import itertools
 from PyQt4 import QtCore, QtGui
 
 
-PLACEHOLDER, FILLED, BLANK = ' @.'
+from .solver import PLACEHOLDER, FILLED, BLANK, solve_line
 
 
 class Board():
@@ -17,7 +17,6 @@ class Board():
         self.rowNumbers = []
         self.colNumbers = []
         self.data = []
-        self.solver = solver.Solver()
         self.filePath = None
         self.clear()
 
@@ -115,14 +114,14 @@ class Board():
     def solveRow(self, rowNo):
         numbers = filter(None, self.rowNumbers[rowNo])
         line = self.data[rowNo]
-        line = self.solver.scanLine(line, numbers)
+        line = solve_line(line, numbers)
         for colNo, state in enumerate(line):
             self.setData(rowNo, colNo, state)
 
     def solveColumn(self, colNo):
         numbers = filter(None, self.colNumbers[colNo])
         line = [row[colNo] for row in self.data]
-        line = self.solver.scanLine(line, numbers)
+        line = solve_line(line, numbers)
         for rowNo, state in enumerate(line):
             self.setData(rowNo, colNo, state)
 
@@ -362,6 +361,3 @@ class BoardModel(QtCore.QAbstractTableModel):
 
     def data(self, index, role):
         return None
-
-
-from . import solver

@@ -2,25 +2,46 @@ __author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
 
 import copy
 
-from .board import FILLED, BLANK, PLACEHOLDER
+
+PLACEHOLDER, FILLED, BLANK = ' @.'
 
 
 class Block():
     """
     """
-    def __init__(self, length, begin):
+    def __init__(self, start, length):
+        self.start = start
         self.length = length
-        self.begin = begin
 
     @property
     def end(self):
-        return self.begin + self.length
+        return self.start + self.length
 
 
-class Solver():
+#class Blocks():
+#    """Расположение блоков.
+#    """
+#    def __init__(self, numbers, line_length):
+#        self._blocks = []  # [(block_start, block_length), (block_start, block_length),...]
+#         # заполняем начальные позиции блоков
+#         # (выравненные влево, с одной пустой клеткой между ними)
+#        block_start = -1
+#        for block_length in numbers:
+#            self._blocks.append(Block(block_start, block_length))
+#            block_start += block_length + 1
+#        self._line_length = line_length
+#
+#    def __len__(self):
+#        return len(self._blocks)
+#
+#    def start(self, block_no):
+#        return self._blocks[block_no].start
+
+
+class _LineSolver():
     """
     """
-    def scanLine(self, line, blockLengths):
+    def __init__(self, line, numbers):
         """line - сканируемая линия
         blockLengths - числа линии"""
         self.line = list(line)
@@ -28,119 +49,119 @@ class Solver():
         # инициализация накопителя
         self.accumulator = [0] * len(line)
 
+         # заполняем начальные позиции блоков
+         # (выравненные влево, с одной пустой клеткой между ними)
         self.blocks = []
-        blockBegin = -1
-        # заполняем начальные позиции блоков
-        # (выравненные влево, с одной пустой клеткой между ними)
-        for blockLen in blockLengths:
-            self.blocks.append(Block(blockLen, blockBegin))
-            blockBegin += blockLen + 1
+        block = Block(-2, 0)
+        for block_length in numbers:
+            # одна пустая ячейка после предыдущего блока
+            block = Block(block.end + 1, block_length)
+            self.blocks.append(block)
 
-        self.pushedBlockNo = 0
+        self.pushed_block_no = 0
+
+    def solve(self):
+
         # пытаемся сдвинуть первый блок на нулевую позицию -
         # есть ли хоть одна действительная раскладка?
-        if self.pushBlock(self.pushedBlockNo):
+        if self.push_block(self.pushed_block_no):
             while True:
                 # учитываем возможную раскладку блоков в накопителе
                 self.accumulate()
                 # запоминаем текущую раскладку блоков, для возможности отката
-                tmp = copy.deepcopy(self.blocks)
-                # пробегаемся по блокам с последнего по первый
-                for self.pushedBlockNo in reversed(range(len(self.blocks))):
-                    if self.pushBlock(self.pushedBlockNo):
-                        break  # продолжить цикл while
+                blocks = copy.deepcopy(self.blocks)
+                # толкаем блоки один за другим с последнего по первый
+                for self.pushed_block_no in reversed(range(len(blocks))):
+                    if self.push_block(self.pushed_block_no):
+                        break  # еще есть раскладки - продолжим толкать
                     # откат на последнюю валидную раскладку
-                    self.blocks = copy.deepcopy(tmp)
+                    self.blocks = copy.deepcopy(blocks)
                 else:
-                    break  # прервать цикл while
+                    break  # прервать цикл while - больше нет возможных раскладок
 
-            for i, count in enumerate(self.accumulator):
-                state = self.line[i]
+            for i, (count, state) in enumerate(zip(self.accumulator, self.line)):
                 if not self.combinations:
+                    # не было не одной возможной раскладки - все стираем
                     state = PLACEHOLDER
                 else:
                     if count == 0:
+                        # ни в одной возможной раскладке ни один блок здесь не попадал - здесь чисто
                         state = BLANK
-                    if count == self.combinations:
+                    elif count == self.combinations:
+                        # во всех возможных раскладках сюда попадал юлок - здесь закрашено
                         state = FILLED
                 self.line[i] = state
 
         return ''.join(self.line)
 
-    def pushBlock(self, blockNo):
+    def push_block(self, block_no):
         """сдвинуть указанный блок вправо на следующую действительную позицию
         возвращает True если получилось сдвинуть,
         False - если нет следующей действительной позиции для текущего блока.
         """
-        if blockNo >= len(self.blocks):
+        if block_no >= len(self.blocks):
             return False
 
-        block = self.blocks[blockNo]
-        blockBegin = block.begin  # начало толкаемого блока
-        blockEnd = block.end  # конец толкаемого блока
-        if blockNo < len(self.blocks) - 1:
+        block = self.blocks[block_no]
+        block_start = block.start  # начало толкаемого блока
+        block_end = block.end  # конец толкаемого блока
+        if block_no < len(self.blocks) - 1:
             # начало следующего блока
-            nextBlockBegin = self.blocks[blockNo + 1].begin
+            next_block_start = self.blocks[block_no + 1].start
         else:
             # последний фиктивный блок, к-й нельзя сдвинуть
-            nextBlockBegin = len(self.line) + 2
+            next_block_start = len(self.line) + 2
 
         while True:
-            blockBegin += 1
-            blockEnd += 1
+            block_start += 1
+            block_end += 1
 
-            if blockEnd > len(self.line):
+            if block_end > len(self.line):
                 # недействительная позиция - блок вышел за границы строки
                 return False
 
-            if blockBegin > 0 and self.line[blockBegin - 1] == FILLED:
+            if block_start > 0 and self.line[block_start - 1] == FILLED:
                 # нельзя оставлять закрашенные клетки за первым толкаемым блоком
-                if blockNo == self.pushedBlockNo:
+                if block_no == self.pushed_block_no:
                     return False
 
-            # текущий блок уперся (пересекается) со следущим - попытаемся его сдвинуть
-            if blockEnd >= nextBlockBegin:
-                if not self.pushBlock(blockNo + 1):
+            # текущий блок уперся (пересекается) со следующим - попытаемся его сдвинуть
+            if block_end >= next_block_start:
+                if not self.push_block(block_no + 1):
                     # не удалось успешно сдвинуть следующий блок
                     return False
+                if block_no < len(self.blocks) - 1:
+                    # начало следующего блока
+                    next_block_start = self.blocks[block_no + 1].start
                 else:
-                    if blockNo < len(self.blocks) - 1:
-                        # начало следующего блока
-                        nextBlockBegin = self.blocks[blockNo + 1].begin
-                    else:
-                        # последний фиктивный блок, к-й нельзя сдвинуть
-                        nextBlockBegin = len(self.line) + 2
-            if blockBegin > 0 and self.line[blockBegin - 1] == FILLED:
-                # невалидная позиция  - клетка перед началом блока закрашена
+                    # правая граница
+                    next_block_start = len(self.line) + 2
+            if block_start > 0 and self.line[block_start - 1] == FILLED:
+                # невалидная позиция - клетка перед началом блока закрашена
                 continue
 
-            if BLANK in self.line[blockBegin:blockEnd]:
+            if BLANK in self.line[block_start:block_end]:
                 # недействительная позиция - блок попадает на уже пустую клетку
                 continue
 
-            if FILLED in self.line[blockEnd:nextBlockBegin]:
+            if FILLED in self.line[block_end:next_block_start]:
                 # недействительная позиция - между текущим и следующим блоками
                 # есть уже закрашенная клетка
                 continue
 
+            # найдена подходящяя раскладка блоков
             break
 
-        block.begin = blockBegin  # новая позиция сдвигаемого блока
+        block.start = block_start  # новая позиция сдвигаемого блока
         return True
 
     def accumulate(self):
         """учесть в накопителе текущую ракладку блоков"""
         for block in self.blocks:
-            for i in range(block.begin, block.end):
+            for i in range(block.start, block.end):
                 self.accumulator[i] += 1
         self.combinations += 1
 
 
-if __name__ == '__main__':  # some tests
-    solver = Solver()
-    assert (solver.scanLine('                         ', [15]) ==
-            '          #####          ')
-    assert (solver.scanLine('###### #   ', [6, 1]) ==
-            '######.#...')
-    assert (solver.scanLine('#..............   ##.## #', [1, 4, 4]) ==
-            '#...............####.####')
+def solve_line(line, numbers):
+    return _LineSolver(line, numbers).solve()
