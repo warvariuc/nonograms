@@ -2,7 +2,7 @@ __author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
 
 import copy
 
-from board import FILLED, BLANK, PLACEHOLDER
+from .board import FILLED, BLANK, PLACEHOLDER
 
 
 class Block():
@@ -98,8 +98,7 @@ class Solver():
                 if blockNo == self.pushedBlockNo:
                     return False
 
-            # текущий блок уперся (пересекается) со следущим -
-            # попытаемся его сдвинуть
+            # текущий блок уперся (пересекается) со следущим - попытаемся его сдвинуть
             if blockEnd >= nextBlockBegin:
                 if not self.pushBlock(blockNo + 1):
                     # не удалось успешно сдвинуть следующий блок
@@ -111,8 +110,8 @@ class Solver():
                     else:
                         # последний фиктивный блок, к-й нельзя сдвинуть
                         nextBlockBegin = len(self.line) + 2
-                # невалидная позиция  - клетка перед началом блока закрашена
             if blockBegin > 0 and self.line[blockBegin - 1] == FILLED:
+                # невалидная позиция  - клетка перед началом блока закрашена
                 continue
 
             if BLANK in self.line[blockBegin:blockEnd]:

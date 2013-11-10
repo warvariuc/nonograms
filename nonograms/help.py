@@ -2,9 +2,12 @@ import platform
 
 from PyQt4 import QtGui, QtCore
 
+from . import __version__
+
 
 def showAboutInfo(mainWindow):
     QtGui.QMessageBox.about(mainWindow, 'О игре "Японские кроссворды"', """
+<h3>Японские кроссворды {}</h3>
 <p><b><a href="http://ru.wikipedia.org/wiki/Японский_кроссворд">Японская
 головоломка</a></b> (также <b>японский кроссворд</b>, <b>японское
 рисование</b>, <b>нонограмма</b>) — головоломка, в которой, в отличие от
@@ -25,7 +28,7 @@ Icons</a>.</p>
 
 <p>Информация о среде исполнения:<br>
 Python {}, Qt {}, PyQt {}, OS {}</p>
-""".format(platform.python_version(), QtCore.QT_VERSION_STR,
+""".format(__version__, platform.python_version(), QtCore.QT_VERSION_STR,
            QtCore.PYQT_VERSION_STR, platform.system()))
 
 

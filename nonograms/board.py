@@ -364,4 +364,4 @@ class BoardModel(QtCore.QAbstractTableModel):
         return None
 
 
-import solver
+from . import solver

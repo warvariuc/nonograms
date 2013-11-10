@@ -7,6 +7,8 @@ from PyQt4 import QtCore, QtGui
 
 def get_icon(fileName):
     return QtGui.QIcon(os.path.join(QtGui.qApp.appDir, 'icons', fileName))
+
+
 recent_doc_icon = get_icon('blue-folder-open-document-text.png')
 
 
@@ -134,11 +136,9 @@ class MainWindow(QtGui.QMainWindow):
         self.boardView.model().board.save()
 
     def showHelpAbout(self):
-        import help
         help.showAboutInfo(self)
 
     def showHelpUsage(self):
-        import help
         help.showUsageInfo(self)
 
     def createAction(self, text, slot=None, shortcut=None, icon='', tip=None,
@@ -166,5 +166,4 @@ class MainWindow(QtGui.QMainWindow):
                 menu.addSeparator()
 
 
-import board
-import settings
+from . import settings, help, board
