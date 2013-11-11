@@ -6,18 +6,6 @@ import copy
 PLACEHOLDER, FILLED, BLANK = ' @.'
 
 
-class Block():
-    """
-    """
-    def __init__(self, start, length):
-        self.start = start
-        self.length = length
-
-    @property
-    def end(self):
-        return self.start + self.length
-
-
 class _LineSolver():
     """
     """
@@ -35,11 +23,11 @@ class _LineSolver():
         # заполняем начальные позиции блоков
         # (выравненные влево, с одной пустой клеткой между ними)
         self.blocks = []
-        block = Block(-2, 0)
+        block_start = -1
         for block_length in numbers:
+            self.blocks.append((block_start, block_start + block_length))
             # одна пустая ячейка после предыдущего блока
-            block = Block(block.end + 1, block_length)
-            self.blocks.append(block)
+            block_start += block_length + 1
 
         self.pushed_block_no = 0
 
@@ -87,13 +75,12 @@ class _LineSolver():
         return ''.join(line)
 
     def push_block(self, block_no):
-        """сдвинуть указанный блок вправо на следующую действительную позицию
+        """Сдвинуть указанный блок вправо на следующую действительную позицию
         возвращает True если получилось сдвинуть,
         False - если нет следующей действительной позиции для текущего блока.
+        self.blocks при этом изменяется.
         """
-        block = self.blocks[block_no]
-        block_start = block.start  # начало толкаемого блока
-        block_end = block.end  # конец толкаемого блока
+        block_start, block_end = self.blocks[block_no]
 
         while True:
             block_start += 1
@@ -110,7 +97,7 @@ class _LineSolver():
 
             if block_no < len(self.blocks) - 1:
                 # начало следующего блока
-                next_block_start = self.blocks[block_no + 1].start
+                next_block_start = self.blocks[block_no + 1][0]
             else:
                 # последний фиктивный блок, к-й нельзя сдвинуть
                 next_block_start = len(self.line) + 2
@@ -128,7 +115,7 @@ class _LineSolver():
 
                 if block_no < len(self.blocks) - 1:
                     # начало следующего блока
-                    next_block_start = self.blocks[block_no + 1].start
+                    next_block_start = self.blocks[block_no + 1][0]
                 else:
                     # правая граница
                     next_block_start = len(self.line) + 2
@@ -147,13 +134,13 @@ class _LineSolver():
                 continue
 
             # найдена подходящяя раскладка блоков
-            block.start = block_start  # новая позиция сдвигаемого блока
+            self.blocks[block_no] = (block_start, block_end)  # новая позиция сдвигаемого блока
             return True
 
     def accumulate_layout(self):
         """учесть в накопителе текущую ракладку блоков"""
-        for block in self.blocks:
-            for i in range(block.start, block.end):
+        for block_start, block_end in self.blocks:
+            for i in range(block_start, block_end):
                 self.layout_accumulator[i] += 1
         self.layout_count += 1
 
