@@ -1,7 +1,5 @@
 __author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
 
-import copy
-
 
 PLACEHOLDER, FILLED, BLANK = ' @.'
 
@@ -43,13 +41,13 @@ class _LineSolver():
             # учитываем возможную раскладку блоков в накопителе
             self.accumulate_layout()
             # запоминаем текущую раскладку блоков, для возможности отката
-            blocks = copy.deepcopy(self.blocks)
+            blocks = self.blocks[:]
             # толкаем блоки один за другим с последнего по первый
             for self.pushed_block_no in reversed(range(len(blocks))):
                 if self.push_block(self.pushed_block_no):
                     break  # еще есть раскладки - продолжим толкать
                 # откат на последнюю валидную раскладку
-                self.blocks = copy.deepcopy(blocks)
+                self.blocks = blocks[:]
             else:
                 break  # прервать цикл while - больше нет возможных раскладок
 
