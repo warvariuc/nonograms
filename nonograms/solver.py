@@ -6,6 +6,7 @@ PLACEHOLDER, FILLED, BLANK = ' @.'
 
 class LayoutAccumulator():
     def __init__(self, line):
+        self.line = line
         self.count = 0  # layout count
         self.accumulator = [0] * len(line)
 
@@ -15,6 +16,27 @@ class LayoutAccumulator():
             for i in range(block_start, block_end):
                 self.accumulator[i] += 1
         self.count += 1
+
+    def result(self):
+        # анализируем результаты
+        if not self.count:
+            # не было не одной возможной раскладки - все стираем
+            return PLACEHOLDER * len(self.line)
+
+        line = list(self.line)
+        for i, (count, state) in enumerate(zip(self.accumulator, line)):
+            if count == 0:
+                # ни в одной возможной раскладке ни один блок сюда не попадал - здесь чисто
+                state = BLANK
+            elif count == self.count:
+                # во всех возможных раскладках сюда попадал блок - здесь закрашено
+                state = FILLED
+            else:
+                # точно не известно - не решено
+                continue
+            line[i] = state
+
+        return ''.join(line)
 
 
 def solve_line(line, numbers):
@@ -56,24 +78,7 @@ def solve_line(line, numbers):
             break  # прервать цикл while - больше нет возможных раскладок
 
     # анализируем результаты
-    if not layout_accumulator.count:
-        # не было не одной возможной раскладки - все стираем
-        return PLACEHOLDER * len(line)
-
-    line = list(line)
-    for i, (count, state) in enumerate(zip(layout_accumulator.accumulator, line)):
-        if count == 0:
-            # ни в одной возможной раскладке ни один блок сюда не попадал - здесь чисто
-            state = BLANK
-        elif count == layout_accumulator.count:
-            # во всех возможных раскладках сюда попадал блок - здесь закрашено
-            state = FILLED
-        else:
-            # точно не известно - не решено
-            continue
-        line[i] = state
-
-    return ''.join(line)
+    return layout_accumulator.result()
 
 
 def push_block(line, blocks, first_block, block_no):
@@ -85,6 +90,7 @@ def push_block(line, blocks, first_block, block_no):
     block_start, block_end = blocks[block_no]
 
     while True:
+
         block_start += 1
         block_end += 1
 
