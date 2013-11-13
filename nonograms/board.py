@@ -113,15 +113,13 @@ class Board():
 
     def solveRow(self, rowNo):
         numbers = filter(None, self.rowNumbers[rowNo])
-        line = ''.join(self.data[rowNo])
-        line = solve_line(line, numbers)
+        line = solve_line(self.data[rowNo], numbers)
         for colNo, state in enumerate(line):
             self.setData(rowNo, colNo, state)
 
     def solveColumn(self, colNo):
         numbers = filter(None, self.colNumbers[colNo])
-        line = ''.join(row[colNo] for row in self.data)
-        line = solve_line(line, numbers)
+        line = solve_line([row[colNo] for row in self.data], numbers)
         for rowNo, state in enumerate(line):
             self.setData(rowNo, colNo, state)
 

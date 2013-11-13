@@ -44,8 +44,6 @@ def solve_line(line, numbers):
     @param line: сканируемая линия
     @param numbers: числа линии
     """
-    assert isinstance(line, str)
-
     # заполняем начальные позиции блоков
     # (выравненные влево, с одной пустой клеткой между ними)
     blocks = []
@@ -81,6 +79,15 @@ def solve_line(line, numbers):
     return layout_accumulator.result()
 
 
+def get_next_block_start(blocks, block_no, line):
+    if block_no < len(blocks) - 1:
+        # начало следующего блока
+        return blocks[block_no + 1][0]
+    else:
+        # последний фиктивный блок, к-й нельзя сдвинуть
+        return len(line) + 2
+
+
 def push_block(line, blocks, first_block, block_no):
     """Сдвинуть указанный блок вправо на следующую действительную позицию
     возвращает True если получилось сдвинуть,
@@ -103,12 +110,7 @@ def push_block(line, blocks, first_block, block_no):
             if block_no == first_block:
                 return False
 
-        if block_no < len(blocks) - 1:
-            # начало следующего блока
-            next_block_start = blocks[block_no + 1][0]
-        else:
-            # последний фиктивный блок, к-й нельзя сдвинуть
-            next_block_start = len(line) + 2
+        next_block_start = get_next_block_start(blocks, block_no, line)
 
         # текущий блок уперся (пересекается) со следующим - попытаемся его сдвинуть
         if block_end >= next_block_start:
@@ -121,12 +123,7 @@ def push_block(line, blocks, first_block, block_no):
                 # не удалось успешно сдвинуть следующий блок
                 return False
 
-            if block_no < len(blocks) - 1:
-                # начало следующего блока
-                next_block_start = blocks[block_no + 1][0]
-            else:
-                # правая граница
-                next_block_start = len(line) + 2
+            next_block_start = get_next_block_start(blocks, block_no, line)
 
         if block_start > 0 and line[block_start - 1] == FILLED:
             # невалидная позиция - клетка перед началом блока закрашена
