@@ -57,7 +57,7 @@ class LineSolver():
     def solve(self):
         # пытаемся сдвинуть первый блок на нулевую позицию -
         # есть ли хоть одна действительная раскладка?
-        if not self.push_block(0, 0):
+        if self.push_block(0, 0) < 0:
             return ''.join(self.line)
 
         blocks = self.blocks
@@ -69,7 +69,7 @@ class LineSolver():
             blocks_backup = blocks[:]
             # толкаем блоки один за другим с последнего по первый
             for first_block in reversed(range(len(blocks))):
-                if self.push_block(first_block, first_block):
+                if self.push_block(first_block, first_block) > 0:
                     break  # еще есть раскладки - продолжим толкать
                 # откат на последнюю валидную раскладку
                 blocks[:] = blocks_backup[:]
@@ -79,19 +79,11 @@ class LineSolver():
         # анализируем результаты
         return self.result()
 
-    def get_next_block_start(self, block_no):
-        if block_no < len(self.blocks) - 1:
-            # начало следующего блока
-            return self.blocks[block_no + 1][0]
-        else:
-            # последний фиктивный блок, к-й нельзя сдвинуть
-            return len(self.line) + 2
-
-    def push_block(self, first_block, block_no):
+    def push_block(self, first_block_no, block_no):
         """Сдвинуть указанный блок вправо на следующую действительную позицию
-        возвращает True если получилось сдвинуть,
-        False - если нет следующей действительной позиции для текущего блока.
-        blocks при этом изменяется.
+        возвращает номер позвиции, если получилось сдвинуть,
+        -1 - если нет следующей действительной позиции для блока.
+        self.blocks при этом изменяется.
         """
         blocks = self.blocks
         line = self.line
@@ -99,49 +91,47 @@ class LineSolver():
 
         while True:
 
+            # сдвигаем блок на одну позицию
             block_start += 1
             block_end += 1
 
             if block_end > len(line):
                 # недействительная позиция - блок вышел за границы строки
-                return False
+                return -1
+
+            if block_no + 1 < len(self.blocks):
+                # есть следующий блок
+                next_block_start = self.blocks[block_no + 1][0]  # начало следующего блока
+                if block_end >= next_block_start:
+                    # текущий блок уперся (пересекается) со следующим
+                    # попытаемся сдвинуть следующий
+                    next_block_start = self.push_block(first_block_no, block_no + 1)
+                    if next_block_start < 0:
+                        # не удалось успешно сдвинуть следующий блок
+                        return -1
+            else:
+                # это последний блок
+                next_block_start = len(self.line)
 
             if block_start > 0 and line[block_start - 1] == FILLED:
-                # нельзя оставлять закрашенные клетки за первым толкаемым блоком
-                if block_no == first_block:
-                    return False
-
-            next_block_start = self.get_next_block_start(block_no)
-
-            # текущий блок уперся (пересекается) со следующим - попытаемся его сдвинуть
-            if block_end >= next_block_start:
-                # текущий блок уперся (пересекается) со следующим - попытаемся его сдвинуть
-                if block_no + 1 >= len(blocks):
-                    # это последний блок
-                    return False
-
-                if not self.push_block(first_block, block_no + 1):
-                    # не удалось успешно сдвинуть следующий блок
-                    return False
-
-                next_block_start = self.get_next_block_start(block_no)
-
-            if block_start > 0 and line[block_start - 1] == FILLED:
-                # невалидная позиция - клетка перед началом блока закрашена
+                # недействительная позиция - клетка перед началом блока закрашена
+                if block_no == first_block_no:
+                    # нельзя оставлять закрашенные клетки за первым толкаемым блоком
+                    return -1
                 continue
 
             if BLANK in line[block_start:block_end]:
-                # недействительная позиция - блок попадает на уже пустую клетку
+                # недействительная позиция - блок попадает на пустую клетку
                 continue
 
             if FILLED in line[block_end:next_block_start]:
                 # недействительная позиция - между текущим и следующим блоком
-                # есть уже закрашенная клетка
+                # есть закрашенная клетка
                 continue
 
             # найдена подходящяя раскладка блоков
-            blocks[block_no] = (block_start, block_end)  # новая позиция сдвигаемого блока
-            return True
+            blocks[block_no] = (block_start, block_end)  # новая позиция сдвинутого блока
+            return block_start
 
 
 def solve_line(line, numbers):
