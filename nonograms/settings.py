@@ -31,11 +31,11 @@ class Settings():
         self.recentFiles = self.settings.value('recentFiles', None) or []
         self.lastUsedDirectory = self.settings.value(
             'lastUsedDirectory', self.puzzle_dir)
-        self.lastPuzzlePath = self.settings.value('lastPuzzlePath', None)
+        self.lastPuzzlePath = self.settings.value('lastPuzzlePath', None) or ''
         if not self.lastPuzzlePath or not os.path.isfile(self.lastPuzzlePath):
             # select a random puzzle
             puzzle_paths = glob.glob(
-                os.path.join(self.puzzle_dir, '*.nonogram1'))
+                os.path.join(self.puzzle_dir, '*.nonogram'))
             if puzzle_paths:
                 self.lastPuzzlePath = random.choice(puzzle_paths)
 
