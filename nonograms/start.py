@@ -41,7 +41,3 @@ def exception_hook(exc_type, exc_value, exc_traceback):
 
 
 sys.excepthook = exception_hook
-
-
-res = app.exec()  # start the event loop
-sys.exit(res)
