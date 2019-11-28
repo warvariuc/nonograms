@@ -1,18 +1,16 @@
-__author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
-
 import os
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 def get_icon(fileName):
-    return QtGui.QIcon(os.path.join(QtGui.qApp.appDir, 'icons', fileName))
+    return QtGui.QIcon(os.path.join(QtWidgets.qApp.appDir, 'icons', fileName))
 
 
 recent_doc_icon = get_icon('blue-folder-open-document-text.png')
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -103,16 +101,16 @@ class MainWindow(QtGui.QMainWindow):
 
     def handlePuzzleSolve(self):
         board = self.boardView.model().board
-        for rowNo in range(board.rowCount):
+        for rowNo in range(board.row_count):
             self.statusBar().showMessage('Решается строка ' + str(rowNo))
-            board.solveRow(rowNo)
-        for columnNo in range(board.colCount):
+            board.solve_row(rowNo)
+        for columnNo in range(board.col_count):
             self.statusBar().showMessage('Решается колонка ' + str(columnNo))
             board.solveColumn(columnNo)
         self.statusBar().clearMessage()
 
     def handleFileOpen(self):
-        filePath = QtGui.QFileDialog.getOpenFileName(
+        filePath, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Открыть файл', self.settings.lastUsedDirectory,
             '*.nonogram (*.nonogram);;*.nonogram1 (*.nonogram1)')
         if filePath:
@@ -143,8 +141,9 @@ class MainWindow(QtGui.QMainWindow):
 
     def createAction(self, text, slot=None, shortcut=None, icon='', tip=None,
                      checkable=False, signal='triggered'):
-        #Convenience function to create PyQt actions
-        action = QtGui.QAction(text, self)
+        """Convenience function to create PyQt actions.
+        """
+        action = QtWidgets.QAction(text, self)
         if icon:
             action.setIcon(get_icon(icon))
         if shortcut is not None:

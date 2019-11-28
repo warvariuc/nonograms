@@ -1,9 +1,7 @@
-__author__ = "Victor Varvariuc <victor.varvariuc@gmail.com>"
-
 import os
 import itertools
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 from .solver import PLACEHOLDER, FILLED, BLANK, solve_line
@@ -14,40 +12,40 @@ class Board():
     """
     def __init__(self, model):
         self.model = model
-        self.rowNumbers = []
-        self.colNumbers = []
+        self.row_numbers = []
+        self.col_numbers = []
         self.data = []
-        self.filePath = None
+        self.file_path = None
         self.clear()
 
     @property
-    def rowCount(self):
-        return len(self.rowNumbers)
+    def row_count(self):
+        return len(self.row_numbers)
 
     @property
-    def colCount(self):
-        return len(self.colNumbers)
+    def col_count(self):
+        return len(self.col_numbers)
 
     @property
-    def maxRowNumCount(self):
-        return len(self.rowNumbers[0]) if self.rowNumbers else 0
+    def max_row_num_count(self):
+        return len(self.row_numbers[0]) if self.row_numbers else 0
 
     @property
-    def maxColNumCount(self):
-        return len(self.colNumbers[0]) if self.colNumbers else 0
+    def max_col_num_count(self):
+        return len(self.col_numbers[0]) if self.col_numbers else 0
 
     def clear(self):
         self.model.layoutAboutToBeChanged.emit()
-        self.data = [[PLACEHOLDER] * self.colCount for _ in range(self.rowCount)]
+        self.data = [[PLACEHOLDER] * self.col_count for _ in range(self.row_count)]
         self.model.layoutChanged.emit()
 
-    def setData(self, row, column, state):
+    def set_data(self, row, column, state):
         self.data[row][column] = state
         index = self.model.index(
-            row + self.maxColNumCount, column + self.maxRowNumCount)
+            row + self.max_col_num_count, column + self.max_row_num_count)
         self.model.dataChanged.emit(index, index)
 
-    def getNumbers(self, line):
+    def get_numbers(self, line):
         numbers = []
         for state, block in itertools.groupby(line):
             if state == FILLED:
@@ -59,82 +57,82 @@ class Board():
                 raise TypeError('Invalid cell value: %r' % state)
         return numbers
 
-    def load(self, filePath):
+    def load(self, file_path):
         """
         """
-        if not os.path.isfile(filePath):
+        if not os.path.isfile(file_path):
             return
-        with open(filePath, 'r', encoding='utf8') as file:
+        with open(file_path) as file:
             board = file.read().splitlines()
 
-        rowNumbers = [self.getNumbers(row) for row in board]
+        row_numbers = [self.get_numbers(row) for row in board]
 
-        colNumbers = [self.getNumbers([row[colNo] for row in board])
-                      for colNo in range(len(board[0]))]
+        col_numbers = [self.get_numbers([row[col_no] for row in board])
+                      for col_no in range(len(board[0]))]
 
-        maxRowNumCount = max(map(len, rowNumbers))
-        self.rowNumbers = [
-            [0] * (maxRowNumCount - len(_rowNumbers)) + _rowNumbers
-            for _rowNumbers in rowNumbers
+        maxRowNumCount = max(map(len, row_numbers))
+        self.row_numbers = [
+            [0] * (maxRowNumCount - len(_row_numbers)) + _row_numbers
+            for _row_numbers in row_numbers
         ]
-        maxColNumCount = max(map(len, colNumbers))
-        self.colNumbers = [
-            [0] * (maxColNumCount - len(_colNumbers)) + _colNumbers
-            for _colNumbers in colNumbers
+        max_col_num_count = max(map(len, col_numbers))
+        self.col_numbers = [
+            [0] * (max_col_num_count - len(_col_numbers)) + _col_numbers
+            for _col_numbers in col_numbers
         ]
         self.clear()
 
-        self.filePath = filePath
+        self.file_path = file_path
 
-    def load1(self, filePath):
+    def load1(self, file_path):
         # загрузить файл с цифрами как здесь:
         # http://www.bestcrosswords.ru/jp/20003009-form.html
-        if not os.path.isfile(filePath):
+        if not os.path.isfile(file_path):
             return
-        with open(filePath, 'r', encoding='utf8') as file:
-            sectionNo = 0
-            verticalNumbersLines = []
-            horizontalNumbersLines = []
+        with open(file_path,) as file:
+            section_no = 0
+            vertical_numbers_lines = []
+            horizontal_numbers_lines = []
             for line in file:
                 line = line.strip()
                 if line:
-                    if sectionNo == 0:
-                        verticalNumbersLines.append(map(int, line.split()))
-                    elif sectionNo == 1:
-                        horizontalNumbersLines.append(map(int, line.split()))
+                    if section_no == 0:
+                        vertical_numbers_lines.append(map(int, line.split()))
+                    elif section_no == 1:
+                        horizontal_numbers_lines.append(map(int, line.split()))
                 else:
-                    sectionNo += 1
+                    section_no += 1
 
-        self.rowNumbers = list(zip(*horizontalNumbersLines))
-        self.colNumbers = list(zip(*verticalNumbersLines))
+        self.row_numbers = list(zip(*horizontal_numbers_lines))
+        self.col_numbers = list(zip(*vertical_numbers_lines))
         self.clear()
 
-        self.filePath = filePath
+        self.file_path = file_path
 
-    def solveRow(self, rowNo):
-        numbers = filter(None, self.rowNumbers[rowNo])
-        line = solve_line(self.data[rowNo], numbers)
-        for colNo, state in enumerate(line):
-            self.setData(rowNo, colNo, state)
+    def solve_row(self, row_no):
+        numbers = filter(None, self.row_numbers[row_no])
+        line = solve_line(self.data[row_no], numbers)
+        for col_no, state in enumerate(line):
+            self.set_data(row_no, col_no, state)
 
-    def solveColumn(self, colNo):
-        numbers = filter(None, self.colNumbers[colNo])
-        line = solve_line([row[colNo] for row in self.data], numbers)
+    def solveColumn(self, col_no):
+        numbers = filter(None, self.col_numbers[col_no])
+        line = solve_line([row[col_no] for row in self.data], numbers)
         for rowNo, state in enumerate(line):
-            self.setData(rowNo, colNo, state)
+            self.set_data(rowNo, col_no, state)
 
     def save(self):
         for row in self.data:
             for state in row:
                 if state not in (FILLED, BLANK):
                     raise Exception('The puzzle is not yet solved!')
-        filePath = os.path.splitext(self.filePath)[0] + '.nonogram'
+        filePath = os.path.splitext(self.file_path)[0] + '.nonogram'
         with open(filePath, 'w', encoding='utf8') as file:
             for line in self.data:
                 file.write(''.join(line) + '\n')
 
 
-class BoardView(QtGui.QTableView):
+class BoardView(QtWidgets.QTableView):
     """
     """
     def __init__(self, parent=None, *args):
@@ -157,7 +155,7 @@ class BoardView(QtGui.QTableView):
         self.initView(22)  # default cell size
 
     def initView(self, cellSize):
-        self.currentAction = None
+        self.current_action = None
         self.cellSize = cellSize
         self.verticalHeader().setDefaultSectionSize(cellSize)
         self.horizontalHeader().setDefaultSectionSize(cellSize)
@@ -166,7 +164,7 @@ class BoardView(QtGui.QTableView):
         for columnNo in range(self.horizontalHeader().count()):
             self.setColumnWidth(columnNo, cellSize)
 
-        numbersFont = QtGui.QApplication.font()
+        numbersFont = QtWidgets.QApplication.font()
         fm = QtGui.QFontMetrics(numbersFont)
         # рассчитываем, что в числах не будет больше 2 цифр
         factor = (cellSize - 6) / fm.width('99')
@@ -184,25 +182,25 @@ class BoardView(QtGui.QTableView):
         self.numbersPen = QtGui.QPen(QtCore.Qt.black)
         self.numbersBorderPen = QtGui.QPen(QtGui.QColor(136, 136, 136))
 
-    def switchCell(self, mouseEvent, state=None):
+    def switch_cell(self, mouse_event, state=None):
         board = self.model().board
-        row = self.rowAt(mouseEvent.y())
-        column = self.columnAt(mouseEvent.x())
-        boardRow = row - board.maxColNumCount
-        boardColumn = column - board.maxRowNumCount
+        row = self.rowAt(mouse_event.y())
+        column = self.columnAt(mouse_event.x())
+        board_row = row - board.max_col_num_count
+        board_column = column - board.max_row_num_count
 
-        if boardRow < 0 or boardColumn < 0:
+        if board_row < 0 or board_column < 0:
             return
 
         if state is None:
-            if self.currentAction is None:
+            if self.current_action is None:
                 return
-            state = self.currentAction
+            state = self.current_action
         else:
-            if state == board.data[boardRow][boardColumn]:
+            if state == board.data[board_row][board_column]:
                 state = PLACEHOLDER
-            self.currentAction = state
-        board.setData(boardRow, boardColumn, state)
+            self.current_action = state
+        board.set_data(board_row, board_column, state)
 
     def eventFilter(self, target, event):  # target - viewport
 
@@ -211,28 +209,28 @@ class BoardView(QtGui.QTableView):
                 # LeftClick -> box; Shift + LeftClick -> space
                 state = (BLANK if event.modifiers() == QtCore.Qt.ShiftModifier
                          else FILLED)
-                self.switchCell(event, state)
+                self.switch_cell(event, state)
                 return True
             elif event.button() == QtCore.Qt.RightButton:
                 model = self.model()
-                rowNo = self.rowAt(event.y()) - model.board.maxColNumCount
-                colNo = self.columnAt(event.x()) - model.board.maxRowNumCount
-                if rowNo >= 0 and colNo >= 0:
-                    self.switchCell(event, BLANK)  # RightClick -> space
-                elif rowNo >= 0 or colNo >= 0:
-                    if colNo < 0:
-                        model.board.solveRow(rowNo)
-                    elif rowNo < 0:
-                        model.board.solveColumn(colNo)
+                row_no = self.rowAt(event.y()) - model.board.max_col_num_count
+                col_no = self.columnAt(event.x()) - model.board.max_row_num_count
+                if row_no >= 0 and col_no >= 0:
+                    self.switch_cell(event, BLANK)  # RightClick -> space
+                elif row_no >= 0 or col_no >= 0:
+                    if col_no < 0:
+                        model.board.solve_row(row_no)
+                    elif row_no < 0:
+                        model.board.solveColumn(col_no)
                 else:
-                    QtGui.qApp.mainWindow.handlePuzzleSolve()
+                    QtWidgets.qApp.mainWindow.handlePuzzleSolve()
                 return True
         elif event.type() == QtCore.QEvent.MouseButtonRelease:
             if event.buttons() == QtCore.Qt.NoButton:
-                self.currentAction = None
+                self.current_action = None
             return True
         elif event.type() == QtCore.QEvent.MouseMove:
-            self.switchCell(event)
+            self.switch_cell(event)
             return True
         elif event.type() == QtCore.QEvent.Wheel:
             # zoom board
@@ -246,7 +244,7 @@ class BoardView(QtGui.QTableView):
         return super().eventFilter(target, event)
 
 
-class BoardViewItemDelegate(QtGui.QStyledItemDelegate):
+class BoardViewItemDelegate(QtWidgets.QStyledItemDelegate):
     """
     """
     def paint(self, painter, option, index,
@@ -256,34 +254,34 @@ class BoardViewItemDelegate(QtGui.QStyledItemDelegate):
         board = model.board
         row = index.row()
         column = index.column()
-        boardRow = row - board.maxColNumCount
-        boardColumn = column - board.maxRowNumCount
+        boardRow = row - board.max_col_num_count
+        boardColumn = column - board.max_row_num_count
 
         if boardRow < 0 and boardColumn < 0:
             painter.fillRect(option.rect, self.parent().numbersBrush)
             return
         if boardRow < 0:
             # это ячейка зоны чисел колонок
-            number = board.colNumbers[boardColumn][row]
+            number = board.col_numbers[boardColumn][row]
             self.drawNumber(
                 painter, option.rect, number, boardRow, boardColumn)
         elif boardColumn < 0:
                 # это ячейка зоны чисел строк
-            number = board.rowNumbers[boardRow][column]
+            number = board.row_numbers[boardRow][column]
             self.drawNumber(
                 painter, option.rect, number, boardRow, boardColumn)
         else:
             # это ячейка поля
             cellValue = board.data[boardRow][boardColumn]
             if cellValue == PLACEHOLDER:
-                self.drawCell(painter, option.rect)
+                self.draw_cell(painter, option.rect)
             elif cellValue == FILLED:
                 self.drawBox(painter, option.rect)
             elif cellValue == BLANK:
                 self.drawSpace(painter, option.rect)
             self.drawBorders(painter, option.rect, boardRow, boardColumn)
 
-    def drawCell(self, painter, rect):
+    def draw_cell(self, painter, rect):
         """Нарисовать обычную нерешенную ячейку.
         """
         painter.fillRect(rect, self.parent().cellBrush)
@@ -348,11 +346,11 @@ class BoardModel(QtCore.QAbstractTableModel):
         super().__init__(parent)
         self.board = Board(self)
 
-    def rowCount(self, parentIndex):
-        return self.board.rowCount + self.board.maxColNumCount
+    def rowCount(self, parent_index):
+        return self.board.row_count + self.board.max_col_num_count
 
-    def columnCount(self, parentIndex):
-        return self.board.colCount + self.board.maxRowNumCount
+    def columnCount(self, parent_index):
+        return self.board.col_count + self.board.max_row_num_count
 
     def getCellValue(self, index):
         return self.board.data[index.row()][index.column()]

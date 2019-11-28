@@ -1,12 +1,12 @@
 import platform
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtCore, QtWidgets
 
 from . import __version__
 
 
 def showAboutInfo(mainWindow):
-    QtGui.QMessageBox.about(mainWindow, 'О игре "Японские кроссворды"', """
+    QtWidgets.QMessageBox.about(mainWindow, 'О игре "Японские кроссворды"', """
 <h3>Японские кроссворды {}</h3>
 <p><b><a href="http://ru.wikipedia.org/wiki/Японский_кроссворд">Японская
 головоломка</a></b> (также <b>японский кроссворд</b>, <b>японское
@@ -33,7 +33,7 @@ Python {}, Qt {}, PyQt {}, OS {}</p>
 
 
 def showUsageInfo(mainWindow):
-    QtGui.QMessageBox.about(mainWindow, 'Как играть', """
+    QtWidgets.QMessageBox.about(mainWindow, 'Как играть', """
 <b>Управление</b>
 <ul>
     <li><i>Левый щелчок мыши на клетке поля</i> - закрасить/сбросить клетку.</li>

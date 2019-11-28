@@ -2,7 +2,7 @@ import os
 import glob
 import random
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 
 
 class Settings():
@@ -10,9 +10,8 @@ class Settings():
     def __init__(self, mainWindow):
         self.mainWindow = mainWindow
 
-        self.path = QtGui.QDesktopServices.storageLocation(
-            QtGui.QDesktopServices.DataLocation)
-        self.puzzle_dir = os.path.join(QtGui.qApp.appDir, 'puzzles')
+        self.path = QtCore.QStandardPaths.standardLocations(QtCore.QStandardPaths.DataLocation)[0]
+        self.puzzle_dir = os.path.join(QtWidgets.qApp.appDir, 'puzzles')
         self.settings = QtCore.QSettings(
             self.path, QtCore.QSettings.IniFormat, self.mainWindow)
         self.readSettings()
