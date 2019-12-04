@@ -135,15 +135,15 @@ class Board():
 class BoardView(QtWidgets.QTableView):
     """
     """
-    def __init__(self, parent=None, *args):
-        super().__init__(parent, *args)
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.setModel(BoardModel(self))
         self.verticalHeader().hide()
         self.horizontalHeader().hide()
 
-        self.itemDelegate = BoardViewItemDelegate(self)
-        self.setItemDelegate(self.itemDelegate)
+        self.item_delegate = BoardViewItemDelegate(self)
+        self.setItemDelegate(self.item_delegate)
 
         self.setShowGrid(False)
         #self.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -152,35 +152,26 @@ class BoardView(QtWidgets.QTableView):
 
         self.viewport().installEventFilter(self)
 
-        self.initView(22)  # default cell size
+        self.init_view(22)  # default cell size
 
-    def initView(self, cellSize):
+    def init_view(self, cell_size):
         self.current_action = None
-        self.cellSize = cellSize
-        self.verticalHeader().setDefaultSectionSize(cellSize)
-        self.horizontalHeader().setDefaultSectionSize(cellSize)
-        for rowNo in range(self.verticalHeader().count()):
-            self.setRowHeight(rowNo, cellSize)
-        for columnNo in range(self.horizontalHeader().count()):
-            self.setColumnWidth(columnNo, cellSize)
+        self.cell_size = cell_size
+        self.verticalHeader().setDefaultSectionSize(cell_size)
+        self.horizontalHeader().setDefaultSectionSize(cell_size)
+        for row_no in range(self.verticalHeader().count()):
+            self.setRowHeight(row_no, cell_size)
+        for column_no in range(self.horizontalHeader().count()):
+            self.setColumnWidth(column_no, cell_size)
 
-        numbersFont = QtWidgets.QApplication.font()
-        fm = QtGui.QFontMetrics(numbersFont)
+        numbers_font = QtWidgets.QApplication.font()
+        fm = QtGui.QFontMetrics(numbers_font)
         # рассчитываем, что в числах не будет больше 2 цифр
-        factor = (cellSize - 6) / fm.width('99')
+        factor = (cell_size - 6) / fm.width('99')
         if factor < 1 or factor > 1.25:
-            numbersFont.setPointSizeF(numbersFont.pointSizeF() * factor)
+            numbers_font.setPointSizeF(numbers_font.pointSizeF() * factor)
 
-        self.setFont(numbersFont)
-
-        self.borderPen = QtGui.QPen(QtGui.QColor(211, 211, 211))
-        self.boxBrush = QtGui.QBrush(QtGui.QColor(80, 80, 80))
-        self.spacePen = QtGui.QPen(QtCore.Qt.gray)
-        self.spaceBrush = QtGui.QBrush(QtCore.Qt.white)
-        self.cellBrush = QtGui.QBrush(QtGui.QColor(240, 240, 240))
-        self.numbersBrush = QtGui.QBrush(QtGui.QColor(211, 211, 211))
-        self.numbersPen = QtGui.QPen(QtCore.Qt.black)
-        self.numbersBorderPen = QtGui.QPen(QtGui.QColor(136, 136, 136))
+        self.setFont(numbers_font)
 
     def switch_cell(self, mouse_event, state=None):
         board = self.model().board
@@ -204,6 +195,19 @@ class BoardView(QtWidgets.QTableView):
 
     def eventFilter(self, target, event):  # target - viewport
 
+        if event.type() == QtCore.QEvent.MouseButtonDblClick:
+            if event.button() == QtCore.Qt.LeftButton:
+                model = self.model()
+                row_no = self.rowAt(event.y()) - model.board.max_col_num_count
+                col_no = self.columnAt(event.x()) - model.board.max_row_num_count
+                if row_no < 0 and col_no < 0:
+                    QtWidgets.qApp.mainWindow.handlePuzzleSolve()
+                else:
+                    if col_no < 0:
+                        model.board.solve_row(row_no)
+                    elif row_no < 0:
+                        model.board.solveColumn(col_no)
+                return True
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if event.button() == QtCore.Qt.LeftButton:
                 # LeftClick -> box; Shift + LeftClick -> space
@@ -217,13 +221,6 @@ class BoardView(QtWidgets.QTableView):
                 col_no = self.columnAt(event.x()) - model.board.max_row_num_count
                 if row_no >= 0 and col_no >= 0:
                     self.switch_cell(event, BLANK)  # RightClick -> space
-                elif row_no >= 0 or col_no >= 0:
-                    if col_no < 0:
-                        model.board.solve_row(row_no)
-                    elif row_no < 0:
-                        model.board.solveColumn(col_no)
-                else:
-                    QtWidgets.qApp.mainWindow.handlePuzzleSolve()
                 return True
         elif event.type() == QtCore.QEvent.MouseButtonRelease:
             if event.buttons() == QtCore.Qt.NoButton:
@@ -235,9 +232,9 @@ class BoardView(QtWidgets.QTableView):
         elif event.type() == QtCore.QEvent.Wheel:
             # zoom board
             if event.modifiers() == QtCore.Qt.ControlModifier:
-                cellSize = self.cellSize + int(event.delta() / 120)
-                if cellSize > 10:  # минимальный размер ячейки
-                    self.initView(cellSize)
+                cell_size = self.cell_size + int(event.angleDelta().y())
+                if cell_size > 10:  # минимальный размер ячейки
+                    self.init_view(cell_size)
                 return True
 
         # standard event processing
@@ -247,53 +244,59 @@ class BoardView(QtWidgets.QTableView):
 class BoardViewItemDelegate(QtWidgets.QStyledItemDelegate):
     """
     """
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.numbers_brush = QtGui.QBrush(QtGui.QColor(211, 211, 211))
+        self.border_pen = QtGui.QPen(QtGui.QColor(211, 211, 211))
+        self.box_brush = QtGui.QBrush(QtGui.QColor(80, 80, 80))
+        self.cell_brush = QtGui.QBrush(QtGui.QColor(240, 240, 240))
+        self.numbers_pen = QtGui.QPen(QtCore.Qt.black)
+        self.numbers_border_pen = QtGui.QPen(QtGui.QColor(136, 136, 136))
+        self.space_pen = QtGui.QPen(QtCore.Qt.gray)
+        self.space_brush = QtGui.QBrush(QtCore.Qt.white)
+
     def paint(self, painter, option, index,
-              renderHint=QtGui.QPainter.TextAntialiasing):
-        painter.setRenderHint(renderHint)
+              render_hint=QtGui.QPainter.TextAntialiasing|QtGui.QPainter.HighQualityAntialiasing):
+        painter.setRenderHints(render_hint)
         model = index.model()
         board = model.board
         row = index.row()
         column = index.column()
-        boardRow = row - board.max_col_num_count
-        boardColumn = column - board.max_row_num_count
+        board_row = row - board.max_col_num_count
+        board_column = column - board.max_row_num_count
 
-        if boardRow < 0 and boardColumn < 0:
-            painter.fillRect(option.rect, self.parent().numbersBrush)
+        if board_row < 0 and board_column < 0:
+            painter.fillRect(option.rect, self.cell_brush)
             return
-        if boardRow < 0:
+        if board_row < 0:
             # это ячейка зоны чисел колонок
-            number = board.col_numbers[boardColumn][row]
-            self.drawNumber(
-                painter, option.rect, number, boardRow, boardColumn)
-        elif boardColumn < 0:
-                # это ячейка зоны чисел строк
-            number = board.row_numbers[boardRow][column]
-            self.drawNumber(
-                painter, option.rect, number, boardRow, boardColumn)
+            number = board.col_numbers[board_column][row]
+            self.draw_number(
+                painter, option.rect, number, board_row, board_column)
+        elif board_column < 0:
+            # это ячейка зоны чисел строк
+            number = board.row_numbers[board_row][column]
+            self.draw_number(
+                painter, option.rect, number, board_row, board_column)
         else:
             # это ячейка поля
-            cellValue = board.data[boardRow][boardColumn]
-            if cellValue == PLACEHOLDER:
-                self.draw_cell(painter, option.rect)
-            elif cellValue == FILLED:
-                self.drawBox(painter, option.rect)
-            elif cellValue == BLANK:
-                self.drawSpace(painter, option.rect)
-            self.drawBorders(painter, option.rect, boardRow, boardColumn)
+            cell_value = board.data[board_row][board_column]
+            if cell_value == PLACEHOLDER:
+                painter.fillRect(option.rect, self.cell_brush)
+            elif cell_value == FILLED:
+                self.draw_box(painter, option.rect.adjusted(0, 0, -1, -1))
+            elif cell_value == BLANK:
+                self.draw_space(painter, option.rect)
+            self.draw_borders(painter, option.rect, board_row, board_column)
 
-    def draw_cell(self, painter, rect):
-        """Нарисовать обычную нерешенную ячейку.
-        """
-        painter.fillRect(rect, self.parent().cellBrush)
-
-    def drawBorders(self, painter, rect, row, column):
-        pen = self.parent().borderPen
+    def draw_borders(self, painter, rect, row, column):
+        pen = self.border_pen
         pen.setWidth(1)
         painter.setPen(pen)
         painter.drawLine(rect.topRight(), rect.bottomRight())
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
 
-        rect = rect.adjusted(1, 1, 0, 0)
+        # Draw wider border each 5 cells
         pen.setWidth(2)
         painter.setPen(pen)
         if (row + 1) % 5 == 1 and row > 0:
@@ -301,32 +304,31 @@ class BoardViewItemDelegate(QtWidgets.QStyledItemDelegate):
         if (column + 1) % 5 == 1 and column > 0:
             painter.drawLine(rect.topLeft(), rect.bottomLeft())
 
-    def drawBox(self, painter, rect):
+    def draw_box(self, painter, rect):
         """Нарисовать закрашенную ячейку.
         """
-        painter.fillRect(rect, self.parent().boxBrush)
+        painter.fillRect(rect, self.box_brush)
 
-    def drawSpace(self, painter, rect):
+    def draw_space(self, painter, rect):
         """Нарисовать забеленную ячейку.
         """
-        painter.fillRect(rect, self.parent().spaceBrush)
-        painter.setPen(self.parent().spacePen)
+        painter.fillRect(rect, self.space_brush)
+        painter.setPen(self.space_pen)
         padding = min(rect.width(), rect.height()) / 3
         rect = rect.adjusted(padding, padding, -padding, -padding)
         painter.drawLine(rect.topLeft(), rect.bottomRight())
         painter.drawLine(rect.bottomLeft(), rect.topRight())
 
-    def drawNumber(self, painter, rect, number, row, column,
-                   align=QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter):
-        painter.fillRect(rect, self.parent().numbersBrush)
+    def draw_number(self, painter, rect, number, row, column,
+                    align=QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter):
+        painter.fillRect(rect, self.numbers_brush)
 
-        pen = self.parent().numbersBorderPen
+        pen = self.numbers_border_pen
         pen.setWidth(1)
         painter.setPen(pen)
         painter.drawLine(rect.topRight(), rect.bottomRight())
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
 
-        rect = rect.adjusted(1, 1, 0, 0)
         pen.setWidth(2)
         painter.setPen(pen)
         if (row + 1) % 5 == 1 and row > 0:
@@ -335,7 +337,7 @@ class BoardViewItemDelegate(QtWidgets.QStyledItemDelegate):
             painter.drawLine(rect.topLeft(), rect.bottomLeft())
 
         if number:
-            painter.setPen(self.parent().numbersPen)
+            painter.setPen(self.numbers_pen)
             rect = rect.adjusted(0, 0, -3, 0)
             painter.drawText(rect, align, str(number))
 
